@@ -3,10 +3,31 @@
 #include <array>
 #include <random>
 #include <chrono>
-#include <iostream>
 
 bool isAlive(std::array<std::array<bool, SCREEN_HEIGHT/14>, SCREEN_WIDTH/14>& state, int i, int j) {
-    
+    int numberAlive = 0;
+    const int neighbours[] = {-1,0,1};
+
+    for (int dx : neighbours) {
+        for (int dy : neighbours) {
+            if (dx == 0 && dy == 0) continue;
+
+            int ni = i + dx;
+            int nj = j + dy;
+
+            if (ni >= 0 && ni < state.size() && nj >=0 && nj < state[0].size()) {
+                numberAlive += state[ni][nj];
+            }
+        }
+    }
+
+    if (state[i][j]) {
+        return (numberAlive == 2 || numberAlive == 3);
+    } else {
+        return (numberAlive == 3);
+    }
+
+    return state[i][j];
 }   
 
 int main() {
@@ -43,18 +64,18 @@ int main() {
                     on.setOutlineColor(sf::Color::Black);
                     on.setOutlineThickness(2);
                     window.draw(on);
+                }
+
+                if (isAlive(state, i, j)){
+                    state[i][j] = 1;
                 } else {
-                    sf::RectangleShape off(sf::Vector2f(10, 10));
-                    off.setFillColor(sf::Color::Black);
-                    off.setPosition(i * 14, j * 14);
-                    off.setOutlineColor(sf::Color::Black);
-                    off.setOutlineThickness(2);
-                    window.draw(off);
+                    state[i][j] = 0;
                 }
             }
         }
 
         window.display(); 
+        sf::sleep(sf::milliseconds(100));
     }
 
     return 0;
