@@ -27,24 +27,61 @@ bool isAlive(std::array<std::array<bool, SCREEN_HEIGHT/14>, SCREEN_WIDTH/14>& st
         return (numberAlive == 3);
     }
 
-    return state[i][j];
-}   
+}  
+
+void update(std::array<std::array<bool, SCREEN_HEIGHT / 14>, SCREEN_WIDTH / 14>& newState, std::array<std::array<bool, SCREEN_HEIGHT/14>, SCREEN_WIDTH/14>& currentState){
+    for (int i = 0; i < SCREEN_WIDTH / 14; i++) {
+        for (int j = 0; j < SCREEN_HEIGHT / 14; j++) {
+            if (isAlive(currentState, i, j)){
+                newState[i][j] = 1;
+            } else {
+                newState[i][j] = 0;
+            }
+        }
+    }
+}
+ 
+void render(const std::array<std::array<bool, SCREEN_HEIGHT / 14>, SCREEN_WIDTH/14>& state, sf::RenderWindow& window){
+    for (int i = 0; i < SCREEN_WIDTH / 14; i++) {
+        for (int j = 0; j < SCREEN_HEIGHT / 14; j++) {
+            if (state[i][j]) {
+                sf::RectangleShape on(sf::Vector2f(CELL_SIZE, CELL_SIZE));
+                on.setFillColor(sf::Color::White);
+                on.setPosition(i * 14, j * 14);
+                on.setOutlineColor(sf::Color::Black);
+                on.setOutlineThickness(2);
+                window.draw(on);
+            }
+        }
+    }
+}
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "Game of Life");
 
-    std::array<std::array<bool, SCREEN_HEIGHT / 14>, SCREEN_WIDTH / 14> state;
+    std::array<std::array<bool, SCREEN_HEIGHT / 14>, SCREEN_WIDTH / 14> currentState;
+    std::array<std::array<bool, SCREEN_HEIGHT / 14>, SCREEN_WIDTH / 14> newState;
 
     //maybe i should make this less ugly
     auto seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     std::mt19937 gen(static_cast<unsigned>(seed));
     std::uniform_int_distribution<> dis(0, 1);
 
+    //for when random
+    // for (int i = 0; i < SCREEN_WIDTH / 14; ++i) {
+    //     for (int j = 0; j < SCREEN_HEIGHT / 14; ++j) {
+    //         currentState[i][j] = dis(gen) == 1; 
+    //     }
+    // }
+
+    //for when manual cell placing
     for (int i = 0; i < SCREEN_WIDTH / 14; ++i) {
         for (int j = 0; j < SCREEN_HEIGHT / 14; ++j) {
-            state[i][j] = dis(gen) == 1; 
+            currentState[i][j] = 0; 
         }
     }
+
+    bool gameStart = 0;
 
     while (window.isOpen()) {
         sf::Event event;
@@ -53,29 +90,37 @@ int main() {
                 window.close();
         }
 
-        window.clear(); 
+        if (!gameStart) {
+            if (event.type == sf::Event::MouseButtonPressed) {
+                if (event.mouseButton.button == sf::Mouse::Left) {
+                    int mouseX = event.mouseButton.x;
+                    int mouseY = event.mouseButton.y;
 
-        for (int i = 0; i < SCREEN_WIDTH / 14; i++) {
-            for (int j = 0; j < SCREEN_HEIGHT / 14; j++) {
-                if (state[i][j]) { 
-                    sf::RectangleShape on(sf::Vector2f(10, 10));
-                    on.setFillColor(sf::Color::White);
-                    on.setPosition(i * 14, j * 14);
-                    on.setOutlineColor(sf::Color::Black);
-                    on.setOutlineThickness(2);
-                    window.draw(on);
-                }
+                    int column = mouseX / 14;
+                    int row = mouseY / 14;
 
-                if (isAlive(state, i, j)){
-                    state[i][j] = 1;
-                } else {
-                    state[i][j] = 0;
+                    currentState[column][row] = 1;
+                    window.clear();
+                    render(currentState, window);
+                    window.display();
                 }
+            }
+
+            if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space)) {
+                gameStart = 1;
             }
         }
 
-        window.display(); 
-        sf::sleep(sf::milliseconds(100));
+        if (gameStart){
+            update(newState, currentState);
+            std::swap(currentState, newState);
+            newState.fill({{0}});
+            window.clear();
+            render(currentState, window);
+            window.display();
+            sf::sleep(sf::milliseconds(100));
+            
+        }
     }
 
     return 0;
